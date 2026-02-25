@@ -68,20 +68,10 @@ jobs:
           name: test-results-${{ matrix.test-group }}
           path: ./TestResults/${{ matrix.test-group }}
 
-  validate:
-    needs: test  # Attend que tous les tests soient passés
-    runs-on: windows-latest
-    if: success()  # Ne se lance que si tout est OK
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-      
-      - name: validate
-        run: |
-          echo "✅ Tous les tests sont passés !"
-          # Ici tu mets tes commandes de déploiement
-          # Exemple: dotnet publish, copie vers serveur, etc.
+  notification:
+      needs: test
+      runs-on: windows-latest
+      if: success()
+      steps:
+        - name: Notify success
+          run: echo "✅ Tous les tests sont passés !"
