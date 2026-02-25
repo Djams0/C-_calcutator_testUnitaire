@@ -33,7 +33,7 @@ jobs:
             **/obj/
 
   test:
-    needs: compilation  # ⬅️ Attend que compilation soit finie
+    needs: compilation  # Attend que compilation soit finie
     runs-on: windows-latest
     permissions:
       contents: read
@@ -69,9 +69,9 @@ jobs:
           path: ./TestResults/${{ matrix.test-group }}
 
   deploy:
-    needs: test  # ⬅️ Attend que tous les tests soient passés
+    needs: test  # Attend que tous les tests soient passés
     runs-on: windows-latest
-    if: success()  # ⬅️ Ne se lance que si tout est OK
+    if: success()  # Ne se lance que si tout est OK
     steps:
       - uses: actions/checkout@v4
       
@@ -83,6 +83,5 @@ jobs:
       - name: Deploy
         run: |
           echo "✅ Tous les tests sont passés !"
-          echo "📦 Déploiement en cours..."
           # Ici tu mets tes commandes de déploiement
           # Exemple: dotnet publish, copie vers serveur, etc.
