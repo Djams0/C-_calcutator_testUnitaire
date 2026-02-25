@@ -80,7 +80,7 @@ jobs:
         with:
           name: build-output
       
-      - name: Deploy
+      - name: validate
         run: |
           echo "✅ Tous les tests sont passés !"
           # Ici tu mets tes commandes de déploiement
