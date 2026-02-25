@@ -68,7 +68,7 @@ jobs:
           name: test-results-${{ matrix.test-group }}
           path: ./TestResults/${{ matrix.test-group }}
 
-  deploy:
+  validate:
     needs: test  # Attend que tous les tests soient passés
     runs-on: windows-latest
     if: success()  # Ne se lance que si tout est OK
