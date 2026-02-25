@@ -5,92 +5,84 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   compilation:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
+      
       - name: Restore
         run: dotnet restore
+      
       - name: Build
-        run: dotnet build
-      - name: Upload build artifact
+        run: dotnet build --configuration Release
+      
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: |
-            **/bin/**
-            **/obj/**
+            **/bin/Release/
+            **/obj/
 
-  test_add:
-    needs: compilation
+  test:
+    needs: compilation  # ⬅️ Attend que compilation soit finie
     runs-on: windows-latest
+    permissions:
+      contents: read
+      checks: write
+      actions: read
+    
+    strategy:
+      matrix:
+        test-group: [Addition, Soustraction, Multiplication, Division, Sin, Cos, Ln, Sqrt]
+      fail-fast: false
+    
     steps:
       - uses: actions/checkout@v4
-      - name: Download build
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-output
-      - name: Test Addition
-        run: dotnet test --filter "FullyQualifiedName~Addition"
-
-  test_sub:
-    needs: compilation
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download build
-        uses: actions/download-artifact@v4
+      
+      - name: Test ${{ matrix.test-group }}
+        run: dotnet test --no-build --filter "FullyQualifiedName~${{ matrix.test-group }}" --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results-${{ matrix.test-group }}.trx" --results-directory:./TestResults/${{ matrix.test-group }}
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
         with:
-          name: build-output
-      - name: Test Soustraction
-        run: dotnet test --filter "FullyQualifiedName~Subtraction"
-
-  test_mul:
-    needs: compilation
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-      - name: Test Multiplication
-        run: dotnet test --filter "FullyQualifiedName~Multiplication"
-
-  test_div:
-    needs: compilation
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-      - name: Test Division
-        run: dotnet test --filter "FullyQualifiedName~Division"
-
-  test_car:
-    needs: compilation
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-      - name: Test Racine Carrée
-        run: dotnet test --filter "FullyQualifiedName~Sqrt"
+          name: test-results-${{ matrix.test-group }}
+          path: ./TestResults/${{ matrix.test-group }}
 
   deploy:
-    needs: [test_add, test_sub, test_mul, test_div, test_car]
-    if: success()
+    needs: test  # ⬅️ Attend que tous les tests soient passés
     runs-on: windows-latest
+    if: success()  # ⬅️ Ne se lance que si tout est OK
     steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      
       - name: Deploy
-        run: echo "Déploiement réussi ! Tous les tests sont passés"
+        run: |
+          echo "✅ Tous les tests sont passés !"
+          echo "📦 Déploiement en cours..."
+          # Ici tu mets tes commandes de déploiement
+          # Exemple: dotnet publish, copie vers serveur, etc.
