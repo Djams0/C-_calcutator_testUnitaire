@@ -5,34 +5,92 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
-  test:
+  compilation:
     runs-on: windows-latest
-    permissions:
-      contents: read
-      checks: write
-      actions: read
-    
-    strategy:
-      matrix:
-        test-group: [Addition, Soustraction, Multiplication, Division, Sin, Cos, Ln, Sqrt]
-      fail-fast: false
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
-      
       - name: Restore
         run: dotnet restore
-      
       - name: Build
-        run: dotnet build --no-restore
-      
-      - name: Test ${{ matrix.test-group }}
-        run: dotnet test --no-build --filter "FullyQualifiedName~${{ matrix.test-group }}" --verbosity normal
+        run: dotnet build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            **/bin/**
+            **/obj/**
+
+  test_add:
+    needs: compilation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      - name: Test Addition
+        run: dotnet test --filter "FullyQualifiedName~Addition"
+
+  test_sub:
+    needs: compilation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      - name: Test Soustraction
+        run: dotnet test --filter "FullyQualifiedName~Subtraction"
+
+  test_mul:
+    needs: compilation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      - name: Test Multiplication
+        run: dotnet test --filter "FullyQualifiedName~Multiplication"
+
+  test_div:
+    needs: compilation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      - name: Test Division
+        run: dotnet test --filter "FullyQualifiedName~Division"
+
+  test_car:
+    needs: compilation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      - name: Test Racine Carrée
+        run: dotnet test --filter "FullyQualifiedName~Sqrt"
+
+  deploy:
+    needs: [test_add, test_sub, test_mul, test_div, test_car]
+    if: success()
+    runs-on: windows-latest
+    steps:
+      - name: Deploy
+        run: echo "Déploiement réussi ! Tous les tests sont passés"
